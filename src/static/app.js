@@ -27,11 +27,43 @@ document.addEventListener("DOMContentLoaded", () => {
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-section">
             <h5>Current Participants (${details.participants.length})</h5>
-            <ul class="participants-list">
-              ${details.participants.map(email => `<li>${email}</li>`).join('')}
-            </ul>
+            <ul class="participants-list"></ul>
           </div>
         `;
+
+        // Add participants with delete icon
+        const ul = activityCard.querySelector('.participants-list');
+        details.participants.forEach(email => {
+          const li = document.createElement('li');
+          li.className = 'participant-item';
+          li.innerHTML = `<span class="participant-email">${email}</span> <span class="delete-icon" title="Remove">&#128465;</span>`;
+          li.querySelector('.delete-icon').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (confirm(`Unregister ${email} from ${name}?`)) {
+              try {
+                const response = await fetch(`/activities/${encodeURIComponent(name)}/unregister?email=${encodeURIComponent(email)}`, {
+                  method: 'DELETE'
+                });
+                const result = await response.json();
+                if (response.ok) {
+                  fetchActivities();
+                  messageDiv.textContent = result.message;
+                  messageDiv.className = "success";
+                } else {
+                  messageDiv.textContent = result.detail || "An error occurred";
+                  messageDiv.className = "error";
+                }
+                messageDiv.classList.remove("hidden");
+                setTimeout(() => { messageDiv.classList.add("hidden"); }, 5000);
+              } catch (error) {
+                messageDiv.textContent = "Failed to unregister participant.";
+                messageDiv.className = "error";
+                messageDiv.classList.remove("hidden");
+              }
+            }
+          });
+          ul.appendChild(li);
+        });
 
         activitiesList.appendChild(activityCard);
 
